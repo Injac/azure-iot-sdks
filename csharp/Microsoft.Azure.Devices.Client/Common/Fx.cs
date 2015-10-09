@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Devices.Client
                 try
                 {
                     ////MessagingClientEtwProvider.Provider.EventWriteFailFastOccurred(description);
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
                     Fx.Exception.TraceFailFast(failFastMessage);
 
                     // Mark that a FailFast is in progress, so that we can take ourselves out of the NLB if for
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Devices.Client
             return (new IOCompletionThunk(callback)).ThunkFrame;
         }
 
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP && !MONO
         public static TransactionCompletedEventHandler ThunkTransactionEventHandler(TransactionCompletedEventHandler handler)
         {
             return (new TransactionEventHandlerThunk(handler)).ThunkFrame;
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.Devices.Client
         [SuppressMessage(FxCop.Category.Design, FxCop.Rule.DoNotCatchGeneralExceptionTypes,
             Justification = "Don't want to hide the exception which is about to crash the process.")]
         [Fx.Tag.SecurityNote(Miscellaneous = "Must not call into PT code as it is called within a CER.")]
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         static void TraceExceptionNoThrow(Exception exception)
@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Devices.Client
                 Safe = "Delegates can be invoked, guaranteed not to call into PT user code from the finally.")]
             void UnhandledExceptionFrame(uint error, uint bytesRead, NativeOverlapped* nativeOverlapped)
             {
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Devices.Client
         }
 #endif // UNUSED
 
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
         sealed class TransactionEventHandlerThunk
         {
             readonly TransactionCompletedEventHandler callback;

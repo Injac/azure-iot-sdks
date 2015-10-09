@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Devices.Client
     static class Ticks
     {
 
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP 
         public static long Now
         {
             [Fx.Tag.SecurityNote(Miscellaneous = "Why isn't the SuppressUnmanagedCodeSecurity attribute working in this case?")]
@@ -18,13 +18,19 @@ namespace Microsoft.Azure.Devices.Client
 #pragma warning disable 1634
 #pragma warning suppress 56523 // function has no error return value
 #pragma warning restore 1634
+#if !MONO
                 UnsafeNativeMethods.GetSystemTimeAsFileTime(out time);
+   
                 return time;
+#endif
+#if MONO
+                return DateTime.Now.ToFileTime();
+#endif
             }
         }
 #endif
 
-        public static long FromMilliseconds(int milliseconds)
+            public static long FromMilliseconds(int milliseconds)
         {
             return checked((long)milliseconds * TimeSpan.TicksPerMillisecond);
         }

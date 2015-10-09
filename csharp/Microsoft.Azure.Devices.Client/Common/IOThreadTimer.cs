@@ -74,14 +74,20 @@ namespace Microsoft.Azure.Devices.Client
             int dummyAdjustment;
             uint increment;
             uint dummyAdjustmentDisabled;
-
+#if !MONO
             if (UnsafeNativeMethods.GetSystemTimeAdjustment(out dummyAdjustment, out increment, out dummyAdjustmentDisabled) != 0)
             {
                 return (long)increment;
             }
+             // Assume the default, which is around 15 milliseconds.
+            return 15 * TimeSpan.TicksPerMillisecond;
+#endif
+#if MONO
 
             // Assume the default, which is around 15 milliseconds.
             return 15 * TimeSpan.TicksPerMillisecond;
+#endif
+
         }
 
         public bool Cancel()
@@ -634,7 +640,7 @@ namespace Microsoft.Azure.Devices.Client
                 Safe = "Doesn't leak information or resources")]
             public WaitableTimer()
             {
-#if WINDOWS_UWP
+#if WINDOWS_UWP || MONO
                 dueTime = 0;
                 throw new NotImplementedException();
 #else
@@ -657,6 +663,7 @@ namespace Microsoft.Azure.Devices.Client
             [SecurityCritical]
             static class TimerHelper
             {
+#if !MONO
                 public static unsafe SafeWaitHandle CreateWaitableTimer()
                 {
                     SafeWaitHandle handle = UnsafeNativeMethods.CreateWaitableTimer(IntPtr.Zero, false, null);
@@ -668,12 +675,18 @@ namespace Microsoft.Azure.Devices.Client
                     }
                     return handle;
                 }
+            
+#endif
                 public static unsafe long Set(SafeWaitHandle timer, long dueTime)
                 {
+#if !MONO
                     if (!UnsafeNativeMethods.SetWaitableTimer(timer, ref dueTime, 0, IntPtr.Zero, IntPtr.Zero, false))
                     {
                         throw Fx.Exception.AsError(new Win32Exception());
-                    }
+                         return dueTime;
+                    } 
+#endif
+                    
                     return dueTime;
                 }
             }

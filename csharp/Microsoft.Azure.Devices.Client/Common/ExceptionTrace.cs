@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Devices.Client
 
         public void TraceHandled(Exception exception, string catchLocation, EventTraceActivity activity = null)
         {
-#if !WINDOWS_UWP || MONO // No Trace in UWP, or Mono. Consider Debug.WriteLine as a quick-fix
+#if !WINDOWS_UWP && !MONO // No Trace in UWP, or Mono. Consider Debug.WriteLine as a quick-fix
 #if DEBUG
             Trace.WriteLine(string.Format(
                 CultureInfo.InvariantCulture,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Devices.Client
                 {
                     case TraceEventType.Critical:
                     case TraceEventType.Error:
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
                         Trace.TraceError("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
 #endif
                         ////if (MessagingClientEtwProvider.Provider.IsEnabled(
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Devices.Client
 #endif
                         break;
                     case TraceEventType.Warning:
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
                         Trace.TraceWarning("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
 #endif
                         ////if (MessagingClientEtwProvider.Provider.IsEnabled(
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Devices.Client
         {
             string details = e.GetType().ToString();
 
-#if !WINDOWS_UWP || MONO
+#if !WINDOWS_UWP && !MONO
             const int MaxStackFrames = 10;
             // Include the current callstack (this ensures we see the Stack in case exception is not output when caught)
             var stackTrace = new StackTrace();
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Devices.Client
             {
                 foreach (Type breakType in Fx.BreakOnExceptionTypes)
                 {
-#if WINDOWS_UWP
+#if WINDOWS_UWP || MONO
                     if (breakType.GetTypeInfo().IsAssignableFrom(exception.GetType().GetTypeInfo()))
                     {
                         Debugger.Launch();

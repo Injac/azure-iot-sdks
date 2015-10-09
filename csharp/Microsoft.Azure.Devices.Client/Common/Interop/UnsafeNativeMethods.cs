@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Devices.Client
     using System.Text;
     using System.Threading;
     using Microsoft.Win32.SafeHandles;
-
+#if !MONO
     [SuppressUnmanagedCodeSecurity]
     static class UnsafeNativeMethods
     {
@@ -255,4 +255,5 @@ namespace Microsoft.Azure.Devices.Client
             public IntPtr buffer;
         }
     }
+#endif
 }
