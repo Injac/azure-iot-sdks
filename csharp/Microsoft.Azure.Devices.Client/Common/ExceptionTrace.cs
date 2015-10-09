@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Devices.Client
     using System.Threading;
     using Microsoft.Azure.Devices.Client.Extensions;
 
-    class ExceptionTrace
+    internal class ExceptionTrace
     {
-        const ushort FailFastEventLogCategory = 6;
-        readonly string eventSourceName;
+        private const ushort FailFastEventLogCategory = 6;
+        private readonly string eventSourceName;
 
         public ExceptionTrace(string eventSourceName)
         {
@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Devices.Client
 
         public ArgumentNullException ArgumentNull(string paramName, string message)
         {
-            return TraceException<ArgumentNullException>(new ArgumentNullException(paramName, message), TraceEventType.Error);
+            return TraceException<ArgumentNullException>(new ArgumentNullException(paramName, message),
+                TraceEventType.Error);
         }
 
         public ArgumentException ArgumentNullOrEmpty(string paramName)
@@ -65,12 +66,15 @@ namespace Microsoft.Azure.Devices.Client
 
         public ArgumentException ArgumentNullOrWhiteSpace(string paramName)
         {
-            return this.Argument(paramName, CommonResources.GetString(CommonResources.ArgumentNullOrWhiteSpace, paramName));
+            return this.Argument(paramName,
+                CommonResources.GetString(CommonResources.ArgumentNullOrWhiteSpace, paramName));
         }
 
         public ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object actualValue, string message)
         {
-            return TraceException<ArgumentOutOfRangeException>(new ArgumentOutOfRangeException(paramName, actualValue, message), TraceEventType.Error);
+            return
+                TraceException<ArgumentOutOfRangeException>(
+                    new ArgumentOutOfRangeException(paramName, actualValue, message), TraceEventType.Error);
         }
 
         // When throwing ObjectDisposedException, it is highly recommended that you use this ctor
@@ -81,12 +85,13 @@ namespace Microsoft.Azure.Devices.Client
         public ObjectDisposedException ObjectDisposed(string message)
         {
             // pass in null, not disposedObject.GetType().FullName as per the above guideline
-            return TraceException<ObjectDisposedException>(new ObjectDisposedException(null, message), TraceEventType.Error);
+            return TraceException<ObjectDisposedException>(new ObjectDisposedException(null, message),
+                TraceEventType.Error);
         }
 
         public void TraceHandled(Exception exception, string catchLocation, EventTraceActivity activity = null)
         {
-#if !WINDOWS_UWP // No Trace in UWP. Consider Debug.WriteLine
+#if !WINDOWS_UWP || MONO // No Trace in UWP, or Mono. Consider Debug.WriteLine as a quick-fix
 #if DEBUG
             Trace.WriteLine(string.Format(
                 CultureInfo.InvariantCulture,
@@ -109,11 +114,15 @@ namespace Microsoft.Azure.Devices.Client
         }
 
 #if !WINDOWS_UWP // attribute does not exist in UWP
+
         [ResourceConsumption(ResourceScope.Process)]
 #endif
-        [Fx.Tag.SecurityNote(Critical = "Calls 'System.Runtime.Interop.UnsafeNativeMethods.IsDebuggerPresent()' which is a P/Invoke method",
+        [Fx.Tag.SecurityNote(
+            Critical =
+                "Calls 'System.Runtime.Interop.UnsafeNativeMethods.IsDebuggerPresent()' which is a P/Invoke method",
             Safe = "Does not leak any resource, needed for debugging")]
-        public TException TraceException<TException>(TException exception, TraceEventType level, EventTraceActivity activity = null)
+        public TException TraceException<TException>(TException exception, TraceEventType level,
+            EventTraceActivity activity = null)
             where TException : Exception
         {
             if (!exception.Data.Contains(this.eventSourceName))
@@ -125,7 +134,7 @@ namespace Microsoft.Azure.Devices.Client
                 {
                     case TraceEventType.Critical:
                     case TraceEventType.Error:
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP || MONO
                         Trace.TraceError("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
 #endif
                         ////if (MessagingClientEtwProvider.Provider.IsEnabled(
@@ -135,10 +144,12 @@ namespace Microsoft.Azure.Devices.Client
                         ////{
                         ////    MessagingClientEtwProvider.Provider.ThrowingExceptionError(activity, GetDetailsForThrownException(exception));
                         ////}
-                         
+#if MONO
+                        Console.WriteLine("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
+#endif
                         break;
                     case TraceEventType.Warning:
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP || MONO
                         Trace.TraceWarning("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
 #endif
                         ////if (MessagingClientEtwProvider.Provider.IsEnabled(
@@ -148,7 +159,9 @@ namespace Microsoft.Azure.Devices.Client
                         ////{
                         ////    MessagingClientEtwProvider.Provider.ThrowingExceptionWarning(activity, GetDetailsForThrownException(exception));
                         ////}
-                       
+#if MONO
+                        Console.WriteLine("An Exception is being thrown: {0}", GetDetailsForThrownException(exception));
+#endif
                         break;
                     default:
 #if DEBUG
@@ -173,14 +186,15 @@ namespace Microsoft.Azure.Devices.Client
         {
             string details = e.GetType().ToString();
 
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP || MONO
             const int MaxStackFrames = 10;
             // Include the current callstack (this ensures we see the Stack in case exception is not output when caught)
             var stackTrace = new StackTrace();
             string stackTraceString = stackTrace.ToString();
             if (stackTrace.FrameCount > MaxStackFrames)
             {
-                string[] frames = stackTraceString.Split(new[] { Environment.NewLine }, MaxStackFrames + 1, StringSplitOptions.RemoveEmptyEntries);
+                string[] frames = stackTraceString.Split(new[] {Environment.NewLine}, MaxStackFrames + 1,
+                    StringSplitOptions.RemoveEmptyEntries);
                 stackTraceString = string.Join(Environment.NewLine, frames, 0, MaxStackFrames) + "...";
             }
 
@@ -192,7 +206,9 @@ namespace Microsoft.Azure.Devices.Client
         }
 
         [SuppressMessage(FxCop.Category.Performance, FxCop.Rule.MarkMembersAsStatic, Justification = "CSDMain #183668")]
-        [Fx.Tag.SecurityNote(Critical = "Calls into critical method UnsafeNativeMethods.IsDebuggerPresent and UnsafeNativeMethods.DebugBreak",
+        [Fx.Tag.SecurityNote(
+            Critical =
+                "Calls into critical method UnsafeNativeMethods.IsDebuggerPresent and UnsafeNativeMethods.DebugBreak",
             Safe = "Safe because it's a no-op in retail builds.")]
         internal void BreakOnException(Exception exception)
         {
