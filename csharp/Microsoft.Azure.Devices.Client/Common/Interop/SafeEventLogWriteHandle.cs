@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Devices.Client
     using System.Security;
     using Microsoft.Win32.SafeHandles;
 
-#if !WINDOWS_UWP
+#if !WINDOWS_UWP || MONO
     [SecurityCritical]
     sealed class SafeEventLogWriteHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
